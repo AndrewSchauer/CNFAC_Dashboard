@@ -16,7 +16,7 @@ app = dash.Dash(__name__, external_stylesheets=[
     dbc.themes.DARKLY,
     "https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&display=swap"
 ])
-app.title = "CNFAC CMAH Dashboard"
+app.title = "CMAH Dashboard"
 server = app.server
 
 # Inject CSS to style danger cell dropdowns
@@ -161,15 +161,15 @@ DANGER_ABBREV = {
 def _build_default_grid():
     """9×9 danger grid: rows=Likelihood (0-8), cols=Size (0-8)."""
     return [
-        ["Low","Low","Low","Low","Moderate","Moderate","Considerable","Considerable","High"],
-        ["Low","Low","Low","Moderate","Moderate","Considerable","Considerable","High","High"],
+        ["Low","Low","Low","Low","Low","Low","Low","Low","Low"],
+        ["Low","Low","Low","Low","Moderate","Moderate","Considerable","Considerable","Considerable"],
         ["Low","Low","Moderate","Moderate","Considerable","Considerable","High","High","High"],
-        ["Low","Moderate","Moderate","Considerable","Considerable","High","High","High","Extreme"],
-        ["Moderate","Moderate","Considerable","Considerable","High","High","High","Extreme","Extreme"],
-        ["Moderate","Considerable","Considerable","High","High","High","Extreme","Extreme","Extreme"],
-        ["Considerable","Considerable","High","High","High","Extreme","Extreme","Extreme","Extreme"],
-        ["Considerable","High","High","High","Extreme","Extreme","Extreme","Extreme","Extreme"],
-        ["High","High","High","Extreme","Extreme","Extreme","Extreme","Extreme","Extreme"],
+        ["Low","Low","Moderate","Considerable","Considerable","High","High","Extreme","Extreme"],
+        ["Low","Moderate","Considerable","Considerable","High","High","Extreme","Extreme","Extreme"],
+        ["Low","Moderate","Considerable","High","High","High","Extreme","Extreme","Extreme"],
+        ["Low","Moderate","Considerable","High","High","Extreme","Extreme","Extreme","Extreme"],
+        ["Low","Moderate","High","High","Extreme","Extreme","Extreme","Extreme","Extreme"],
+        ["Low","Moderate","High","Extreme","Extreme","Extreme","Extreme","Extreme","Extreme"],
     ]
 
 DEFAULT_DANGER_GRID = _build_default_grid()
@@ -559,8 +559,8 @@ app.layout = html.Div([
 
     html.Div([
         html.Div([
-            html.Span("⛰", style={"fontSize": "26px", "marginRight": "10px"}),
-            html.Span("AVALANCHE FORECAST", style={
+            html.Img(src="https://raw.githubusercontent.com/AndrewSchauer/CNFAC_Dashboard/main/CNFAC_Logo.png", style={"height": "40px", "marginRight": "10px"}),
+            html.Span("AVALANCHE FORECAST DASHBOARD", style={
                 "fontFamily": "Barlow Condensed", "fontWeight": "700",
                 "fontSize": "22px", "letterSpacing": "0.25em", "color": "#ffffff"
             }),
