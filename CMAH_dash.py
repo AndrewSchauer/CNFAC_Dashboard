@@ -77,7 +77,18 @@ app.index_string = app.index_string.replace(
 #dist-slider .dash-slider-track {
     background-color: #1e3a4a !important;
 }
-</style></head>"""
+/* Responsive: ensure graphs fill container on all screen sizes */
+.js-plotly-plot, .plotly, .plot-container {
+    width: 100% !important;
+}
+/* Mobile padding adjustment */
+@media (max-width: 768px) {
+    .dash-graph { width: 100% !important; }
+    .card-body { padding: 10px !important; }
+}
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>"""
 )
 
 # ─── Constants ────────────────────────────────────────────────────────────────
@@ -286,7 +297,9 @@ def build_likelihood_figure(sf, df):
             gridcolor="#1e2d3d", showline=False, zeroline=False,
             fixedrange=True,
         ),
-        height=280,
+        height=None,
+        width=None,
+        autosize=True,
     )
     return fig
 
@@ -356,8 +369,9 @@ def build_danger_figure(lik_range, size_range, danger_grid):
             gridcolor="#1e2d3d", showline=False, zeroline=False,
             fixedrange=True,
         ),
-        height=500,
-        width=500,
+        height=None,
+        width=None,
+        autosize=True,
     )
     return fig
 
@@ -503,14 +517,14 @@ forecast_tab = dbc.Row([
                 "modeBarButtonsToRemove": ["zoom2d","pan2d","zoomIn2d","zoomOut2d",
                                            "autoScale2d","resetScale2d","toImage"],
                 "editable": False,
-            }),
+            }, style={"width": "100%"}),
         ]), style=card),
         dbc.Card(dbc.CardBody([
             html.Div("DANGER MATRIX", style=lbl),
             dcc.Graph(id="danger-matrix", config={"displayModeBar": False},
-                      style={"width": "500px", "height": "500px", "margin": "0 auto"}),
+                      style={"width": "100%", "aspectRatio": "1 / 1"}),
         ]), style=card),
-    ], width=8),
+    ], xs=12, md=8),
     dbc.Col([
         controls,
         dbc.Card(dbc.CardBody([
@@ -526,7 +540,7 @@ forecast_tab = dbc.Row([
                 "opacity": "0.9",
             }
         ),
-    ], width=4),
+    ], xs=12, md=4),
 ])
 
 settings_tab = html.Div([
@@ -592,7 +606,7 @@ app.layout = html.Div([
     ], active_tab="forecast",
        style={"backgroundColor": "#060e1a", "borderBottom": "1px solid #1e3a4a"}),
 
-], style={"backgroundColor": "#080f1a", "minHeight": "100vh"})
+], style={"backgroundColor": "#080f1a", "minHeight": "100vh", "maxWidth": "100vw", "overflowX": "hidden"})
 
 
 # ─── Callbacks ────────────────────────────────────────────────────────────────
