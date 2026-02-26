@@ -268,7 +268,7 @@ def build_likelihood_figure(sf, df):
 
     fig.update_layout(
         paper_bgcolor="#0d1b2a", plot_bgcolor="#0d1b2a",
-        margin=dict(l=10, r=10, t=10, b=40),
+        margin=dict(l=70, r=10, t=10, b=50),
         dragmode="drawrect",
         newshape=dict(
             line=dict(color="#00e5ff", width=3),
@@ -300,7 +300,6 @@ def build_likelihood_figure(sf, df):
         height=280,
         width=280,
         autosize=False,
-        margin=dict(l=80, r=10, t=10, b=60),
     )
     return fig
 
@@ -346,7 +345,7 @@ def build_danger_figure(lik_range, size_range, danger_grid):
 
     fig.update_layout(
         paper_bgcolor="#0d1b2a", plot_bgcolor="#0d1b2a",
-        margin=dict(l=10, r=10, t=10, b=40),
+        margin=dict(l=80, r=10, t=10, b=60),
         dragmode=False,
         xaxis=dict(
             tickmode="array",
@@ -373,7 +372,6 @@ def build_danger_figure(lik_range, size_range, danger_grid):
         height=420,
         width=420,
         autosize=False,
-        margin=dict(l=80, r=10, t=10, b=60),
     )
     return fig
 
