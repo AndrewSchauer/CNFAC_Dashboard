@@ -16,7 +16,6 @@ app = dash.Dash(__name__, external_stylesheets=[
     dbc.themes.DARKLY,
     "https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&display=swap"
 ])
-server = app.server
 app.title = "Avalanche Forecast Dashboard"
 
 # Inject CSS to style danger cell dropdowns
@@ -794,4 +793,8 @@ def danger_drag_to_sliders(relayout, curr_size):
 
 
 if __name__ == "__main__":
-    app.run(debug=False, host="127.0.0.1", port=8050, jupyter_mode="external")
+    import os
+    # Use 0.0.0.0 on Render (or any cloud host), 127.0.0.1 locally on Windows
+    host = "0.0.0.0" if os.environ.get("RENDER") else "127.0.0.1"
+    port = int(os.environ.get("PORT", 8050))
+    app.run(debug=False, host=host, port=port, jupyter_mode="external")
