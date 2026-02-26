@@ -15,7 +15,7 @@ import numpy as np
 app = dash.Dash(__name__, external_stylesheets=[
     dbc.themes.DARKLY,
     "https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&display=swap"
-])
+], suppress_callback_exceptions=True)
 app.title = "CMAH Dashboard"
 server = app.server
 
@@ -70,9 +70,7 @@ app.index_string = app.index_string.replace(
 }
 /* Hide the filled range bar on the sensitivity and distribution point sliders */
 #sens-slider .dash-slider-range,
-#dist-slider .dash-slider-range {
-    background: transparent !important;
-}
+#dist-slider .dash-slider-range,
 #sens-slider .dash-slider-track,
 #dist-slider .dash-slider-track {
     background-color: #1e3a4a !important;
@@ -81,10 +79,11 @@ app.index_string = app.index_string.replace(
 .js-plotly-plot, .plotly, .plot-container {
     width: 100% !important;
 }
-/* Mobile padding adjustment */
-@media (max-width: 768px) {
-    .dash-graph { width: 100% !important; }
-    .card-body { padding: 10px !important; }
+/* Mobile: stack everything in correct order */
+@media (max-width: 767px) {
+    #forecast-inner { flex-direction: column !important; }
+    #forecast-inner > div { flex: 0 0 100% !important; max-width: 100% !important; padding: 0 !important; }
+    /* sliders (order 1) appear first, matrices (order 2) second */
 }
 </style>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -507,38 +506,51 @@ controls = dbc.Card(dbc.CardBody([
     make_range_slider("size-slider", SIZE_LABELS, [1, 4]),
 ]), style=card)
 
-forecast_tab = dbc.Row([
-    # Left col: matrices (order 2 on mobile, order 1 on desktop)
-    dbc.Col([
-        dbc.Card(dbc.CardBody([
-            html.Div("LIKELIHOOD MATRIX", style=lbl),
-            dcc.Graph(id="likelihood-matrix", config={
-                "displayModeBar": True,
-                "modeBarButtonsToAdd": ["drawrect", "eraseshape"],
-                "modeBarButtonsToRemove": ["zoom2d","pan2d","zoomIn2d","zoomOut2d",
-                                           "autoScale2d","resetScale2d","toImage"],
-                "editable": False,
-            }, style={"maxWidth": "465px", "width": "100%", "margin": "0 auto"}),
-        ]), style=card),
-        dbc.Card(dbc.CardBody([
-            html.Div("DANGER MATRIX", style=lbl),
-            dcc.Graph(id="danger-matrix", config={"displayModeBar": False},
-                      style={"maxWidth": "420px", "width": "100%", "margin": "0 auto"}),
-        ]), style=card),
-    ], xs=12, md=8, className="order-2 order-md-1"),
-    # Right col: sliders + summary + image (order 1 on mobile, order 2 on desktop)
-    dbc.Col([
-        controls,
-        dbc.Card(dbc.CardBody([
-            html.Div("FORECAST SUMMARY", style=lbl),
-            html.Div(id="forecast-summary"),
-        ]), style=card),
-        html.Img(
-            src="https://raw.githubusercontent.com/AndrewSchauer/CNFAC_Dashboard/main/NAPADS.png",
-            style={"width": "100%", "marginTop": "4px", "borderRadius": "4px", "opacity": "0.9"},
-        ),
-    ], xs=12, md=4, className="order-1 order-md-2"),
-], className="flex-wrap")
+forecast_tab = html.Div([
+    # Single layout - CSS controls ordering on mobile vs desktop
+    # Desktop: two columns side by side
+    # Mobile: single column - sliders, matrices, summary, image
+    html.Div([
+        # ── Left / matrices block ────────────────────────────────────────────
+        html.Div([
+            dbc.Card(dbc.CardBody([
+                html.Div("LIKELIHOOD MATRIX", style=lbl),
+                dcc.Graph(id="likelihood-matrix", config={
+                    "displayModeBar": True,
+                    "modeBarButtonsToAdd": ["drawrect", "eraseshape"],
+                    "modeBarButtonsToRemove": ["zoom2d","pan2d","zoomIn2d","zoomOut2d",
+                                               "autoScale2d","resetScale2d","toImage"],
+                    "editable": False,
+                }, style={"maxWidth": "465px", "width": "100%", "margin": "0 auto"}),
+            ]), style=card),
+            dbc.Card(dbc.CardBody([
+                html.Div("DANGER MATRIX", style=lbl),
+                dcc.Graph(id="danger-matrix", config={"displayModeBar": False},
+                          style={"maxWidth": "420px", "width": "100%", "margin": "0 auto"}),
+            ]), style=card),
+        ], style={"flex": "0 0 66%", "maxWidth": "66%", "order": "2",
+                  "boxSizing": "border-box", "padding": "0 8px"}),
+
+        # ── Right / controls block ───────────────────────────────────────────
+        html.Div([
+            controls,
+            dbc.Card(dbc.CardBody([
+                html.Div("FORECAST SUMMARY", style=lbl),
+                html.Div(id="forecast-summary"),
+            ]), style=card),
+            html.Img(
+                src="https://raw.githubusercontent.com/AndrewSchauer/CNFAC_Dashboard/main/NAPADS.png",
+                style={"width": "100%", "marginTop": "4px", "borderRadius": "4px", "opacity": "0.9"},
+            ),
+        ], style={"flex": "0 0 33%", "maxWidth": "33%", "order": "1",
+                  "boxSizing": "border-box", "padding": "0 8px"}),
+
+    ], id="forecast-inner", style={
+        "display": "flex",
+        "flexWrap": "wrap",
+    }),
+])
+
 
 settings_tab = html.Div([
     html.Div("CONFIGURE DANGER GRID", style={**lbl, "fontSize": "15px"}),
@@ -671,6 +683,7 @@ def update_all(sens_val, dist_val, size_range, danger_grid):
         ]),
     ])
     return lik_fig, danger_fig, summary
+
 
 
 @app.callback(
