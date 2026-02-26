@@ -297,8 +297,8 @@ def build_likelihood_figure(sf, df):
             gridcolor="#1e2d3d", showline=False, zeroline=False,
             fixedrange=True,
         ),
-        height=280,
-        width=280,
+        height=465,
+        width=350,
         autosize=False,
     )
     return fig
@@ -518,7 +518,7 @@ forecast_tab = dbc.Row([
                 "modeBarButtonsToRemove": ["zoom2d","pan2d","zoomIn2d","zoomOut2d",
                                            "autoScale2d","resetScale2d","toImage"],
                 "editable": False,
-            }, style={"maxWidth": "280px", "width": "100%", "margin": "0 auto"}),
+            }, style={"maxWidth": "350px", "width": "100%", "margin": "0 auto"}),
         ]), style=card),
         dbc.Card(dbc.CardBody([
             html.Div("DANGER MATRIX", style=lbl),
