@@ -163,13 +163,13 @@ def _build_default_grid():
     return [
         ["Low","Low","Low","Low","Low","Low","Low","Low","Low"],
         ["Low","Low","Low","Low","Moderate","Moderate","Considerable","Considerable","Considerable"],
-        ["Low","Low","Moderate","Moderate","Considerable","Considerable","High","High","High"],
-        ["Low","Low","Moderate","Considerable","Considerable","High","High","Extreme","Extreme"],
+        ["Low","Low","Moderate","Moderate","Moderate","Considerable","Considerable","High","High"],
+        ["Low","Low","Moderate","Moderate","Considerable","Considerable","High","High","Extreme"],
+        ["Low","Moderate","Moderate","Considerable","Considerable","High","High","Extreme","Extreme"],
         ["Low","Moderate","Considerable","Considerable","High","High","Extreme","Extreme","Extreme"],
-        ["Low","Moderate","Considerable","High","High","High","Extreme","Extreme","Extreme"],
         ["Low","Moderate","Considerable","High","High","Extreme","Extreme","Extreme","Extreme"],
         ["Low","Moderate","High","High","Extreme","Extreme","Extreme","Extreme","Extreme"],
-        ["Low","Moderate","High","Extreme","Extreme","Extreme","Extreme","Extreme","Extreme"],
+        ["Low","Moderate","High","High","Extreme","Extreme","Extreme","Extreme","Extreme"],
     ]
 
 DEFAULT_DANGER_GRID = _build_default_grid()
