@@ -180,7 +180,7 @@ def _build_default_grid():
     """9×9 danger grid: rows=Likelihood (0-8), cols=Size (0-8)."""
     return [
         ["Low","Low","Low","Low","Low","Low","Low","Low","Low"],
-        ["Low","Low","Low","Low","Moderate","Moderate","Considerable","Considerable","Considerable"],
+        ["Low","Low","Low","Moderate","Moderate","Moderate","Considerable","Considerable","Considerable"],
         ["Low","Low","Moderate","Moderate","Moderate","Considerable","Considerable","High","High"],
         ["Low","Low","Moderate","Moderate","Considerable","Considerable","High","High","Extreme"],
         ["Low","Moderate","Moderate","Considerable","Considerable","High","High","Extreme","Extreme"],
@@ -573,11 +573,11 @@ app.layout = html.Div([
     html.Div([
         html.Div([
             html.Div([
-                html.Span("AVALANCHE FORECAST DASHBOARD", style={
+                html.Span("🔮 CMAH DASHBOARD", style={
                     "fontFamily": "Barlow Condensed", "fontWeight": "700",
                     "fontSize": "22px", "letterSpacing": "0.25em", "color": "#ffffff"
                 }),
-                html.Div("RISK ASSESSMENT TOOL", style={
+                html.Div("AVALANCHE RISK ASSESSMENT TOOL", style={
                     "fontFamily": "Share Tech Mono", "fontSize": "10px",
                     "color": "#00e5ff", "letterSpacing": "0.2em", "marginTop": "2px"
                 }),
