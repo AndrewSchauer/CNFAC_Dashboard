@@ -16,8 +16,8 @@ app = dash.Dash(__name__, external_stylesheets=[
     dbc.themes.DARKLY,
     "https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&display=swap"
 ])
-server = app.server 
 app.title = "CNFAC CMAH Dashboard"
+server = app.server
 
 # Inject CSS to style danger cell dropdowns
 app.index_string = app.index_string.replace(
@@ -356,7 +356,8 @@ def build_danger_figure(lik_range, size_range, danger_grid):
             gridcolor="#1e2d3d", showline=False, zeroline=False,
             fixedrange=True,
         ),
-        height=400,
+        height=500,
+        width=500,
     )
     return fig
 
@@ -506,7 +507,8 @@ forecast_tab = dbc.Row([
         ]), style=card),
         dbc.Card(dbc.CardBody([
             html.Div("DANGER MATRIX", style=lbl),
-            dcc.Graph(id="danger-matrix", config={"displayModeBar": False}),
+            dcc.Graph(id="danger-matrix", config={"displayModeBar": False},
+                      style={"width": "500px", "height": "500px", "margin": "0 auto"}),
         ]), style=card),
     ], width=8),
     dbc.Col([
