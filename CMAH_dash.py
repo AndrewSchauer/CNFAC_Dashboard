@@ -574,7 +574,7 @@ app.layout = html.Div([
     html.Div([
         html.Div([
             html.Div([
-                html.Span("AVALANCHE FORECAST DASHBOARD", style={
+                html.Span("CMAH DASHBOARD", style={
                     "fontFamily": "Barlow Condensed", "fontWeight": "700",
                     "fontSize": "22px", "letterSpacing": "0.25em", "color": "#ffffff"
                 }),
