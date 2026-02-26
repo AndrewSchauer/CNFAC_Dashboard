@@ -75,14 +75,17 @@ app.index_string = app.index_string.replace(
 #dist-slider .dash-slider-track {
     background-color: #1e3a4a !important;
 }
-/* Center graphs in their containers */
-#likelihood-matrix, #danger-matrix { display: block; margin: 0 auto; }
+/* Center graphs and constrain to container on all screen sizes */
+#likelihood-matrix, #danger-matrix { display: block; margin: 0 auto; max-width: 100%; }
 #likelihood-matrix .js-plotly-plot, #danger-matrix .js-plotly-plot { margin: 0 auto; }
-/* Mobile: scale matrices to fit screen */
+#likelihood-matrix .main-svg, #danger-matrix .main-svg { max-width: 100% !important; }
 @media (max-width: 767px) {
-    #likelihood-matrix, #danger-matrix { max-width: 100% !important; overflow: hidden; }
-    #likelihood-matrix .js-plotly-plot, #danger-matrix .js-plotly-plot { max-width: 100% !important; }
-    #likelihood-matrix svg, #danger-matrix svg { max-width: 100% !important; height: auto !important; }
+    #likelihood-matrix .main-svg, #danger-matrix .main-svg {
+        width: 100% !important;
+        height: auto !important;
+    }
+    #likelihood-matrix, #danger-matrix { width: 100% !important; }
+    #likelihood-matrix > div, #danger-matrix > div { width: 100% !important; }
 }
 </style>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -266,7 +269,7 @@ def build_likelihood_figure(sf, df):
 
     fig.update_layout(
         paper_bgcolor="#0d1b2a", plot_bgcolor="#0d1b2a",
-        margin=dict(l=70, r=10, t=10, b=50),
+        margin=dict(l=60, r=10, t=10, b=40),
         dragmode="drawrect",
         newshape=dict(
             line=dict(color="#00e5ff", width=3),
@@ -295,8 +298,6 @@ def build_likelihood_figure(sf, df):
             gridcolor="#1e2d3d", showline=False, zeroline=False,
             fixedrange=True,
         ),
-        height=350,
-        width=465,
         autosize=True,
     )
     return fig
@@ -343,7 +344,7 @@ def build_danger_figure(lik_range, size_range, danger_grid):
 
     fig.update_layout(
         paper_bgcolor="#0d1b2a", plot_bgcolor="#0d1b2a",
-        margin=dict(l=80, r=10, t=10, b=60),
+        margin=dict(l=65, r=10, t=10, b=50),
         dragmode=False,
         xaxis=dict(
             tickmode="array",
@@ -367,8 +368,6 @@ def build_danger_figure(lik_range, size_range, danger_grid):
             gridcolor="#1e2d3d", showline=False, zeroline=False,
             fixedrange=True,
         ),
-        height=420,
-        width=420,
         autosize=True,
     )
     return fig
@@ -517,12 +516,17 @@ forecast_tab = dbc.Row([
                 "modeBarButtonsToRemove": ["zoom2d","pan2d","zoomIn2d","zoomOut2d",
                                            "autoScale2d","resetScale2d","toImage"],
                 "editable": False,
-            }), style={"display": "flex", "justifyContent": "center"}),
+                "responsive": True,
+            }, style={"width": "100%", "maxWidth": "465px"},
+               responsive=True), style={"display": "flex", "justifyContent": "center"}),
         ]), style=card),
         dbc.Card(dbc.CardBody([
             html.Div("DANGER MATRIX", style=lbl),
-            html.Div(dcc.Graph(id="danger-matrix", config={"displayModeBar": False}),
-                     style={"display": "flex", "justifyContent": "center"}),
+            html.Div(dcc.Graph(id="danger-matrix", config={
+                "displayModeBar": False,
+                "responsive": True,
+            }, style={"width": "100%", "maxWidth": "420px"},
+               responsive=True), style={"display": "flex", "justifyContent": "center"}),
         ]), style=card),
     ], xs=12, md=8),
     # Right col: summary + NAPADS
