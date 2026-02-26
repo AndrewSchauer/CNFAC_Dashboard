@@ -524,7 +524,7 @@ forecast_tab = dbc.Row([
             dcc.Graph(id="danger-matrix", config={"displayModeBar": False},
                       style={"width": "100%", "aspectRatio": "1 / 1"}),
         ]), style=card),
-    ], xs=12, md=8),
+    ], xs=12, md=8, style={"order": "2"}, className="order-md-1"),
     dbc.Col([
         controls,
         dbc.Card(dbc.CardBody([
@@ -540,7 +540,7 @@ forecast_tab = dbc.Row([
                 "opacity": "0.9",
             }
         ),
-    ], xs=12, md=4),
+    ], xs=12, md=4, style={"order": "1"}, className="order-md-2"),
 ])
 
 settings_tab = html.Div([
