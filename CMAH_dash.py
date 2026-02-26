@@ -297,9 +297,10 @@ def build_likelihood_figure(sf, df):
             gridcolor="#1e2d3d", showline=False, zeroline=False,
             fixedrange=True,
         ),
-        height=None,
-        width=None,
-        autosize=True,
+        height=280,
+        width=280,
+        autosize=False,
+        margin=dict(l=80, r=10, t=10, b=60),
     )
     return fig
 
@@ -369,9 +370,10 @@ def build_danger_figure(lik_range, size_range, danger_grid):
             gridcolor="#1e2d3d", showline=False, zeroline=False,
             fixedrange=True,
         ),
-        height=None,
-        width=None,
-        autosize=True,
+        height=420,
+        width=420,
+        autosize=False,
+        margin=dict(l=80, r=10, t=10, b=60),
     )
     return fig
 
@@ -518,12 +520,12 @@ forecast_tab = dbc.Row([
                 "modeBarButtonsToRemove": ["zoom2d","pan2d","zoomIn2d","zoomOut2d",
                                            "autoScale2d","resetScale2d","toImage"],
                 "editable": False,
-            }, style={"width": "100%"}),
+            }, style={"maxWidth": "280px", "width": "100%", "margin": "0 auto"}),
         ]), style=card),
         dbc.Card(dbc.CardBody([
             html.Div("DANGER MATRIX", style=lbl),
             dcc.Graph(id="danger-matrix", config={"displayModeBar": False},
-                      style={"width": "100%", "aspectRatio": "1 / 1"}),
+                      style={"maxWidth": "420px", "width": "100%", "margin": "0 auto"}),
         ]), style=card),
     ], xs=12, md=8, className="order-2 order-md-1"),
     # Right col: sliders + summary + image (order 1 on mobile, order 2 on desktop)
