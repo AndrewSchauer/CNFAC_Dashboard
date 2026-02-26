@@ -508,6 +508,7 @@ controls = dbc.Card(dbc.CardBody([
 ]), style=card)
 
 forecast_tab = dbc.Row([
+    # Left col: matrices (order 2 on mobile, order 1 on desktop)
     dbc.Col([
         dbc.Card(dbc.CardBody([
             html.Div("LIKELIHOOD MATRIX", style=lbl),
@@ -524,7 +525,8 @@ forecast_tab = dbc.Row([
             dcc.Graph(id="danger-matrix", config={"displayModeBar": False},
                       style={"width": "100%", "aspectRatio": "1 / 1"}),
         ]), style=card),
-    ], xs=12, md=8, style={"order": "2"}, className="order-md-1"),
+    ], xs=12, md=8, className="order-2 order-md-1"),
+    # Right col: sliders + summary + image (order 1 on mobile, order 2 on desktop)
     dbc.Col([
         controls,
         dbc.Card(dbc.CardBody([
@@ -533,15 +535,10 @@ forecast_tab = dbc.Row([
         ]), style=card),
         html.Img(
             src="https://raw.githubusercontent.com/AndrewSchauer/CNFAC_Dashboard/main/NAPADS.png",
-            style={
-                "width": "100%",
-                "marginTop": "4px",
-                "borderRadius": "4px",
-                "opacity": "0.9",
-            }
+            style={"width": "100%", "marginTop": "4px", "borderRadius": "4px", "opacity": "0.9"},
         ),
-    ], xs=12, md=4, style={"order": "1"}, className="order-md-2"),
-])
+    ], xs=12, md=4, className="order-1 order-md-2"),
+], className="flex-wrap")
 
 settings_tab = html.Div([
     html.Div("CONFIGURE DANGER GRID", style={**lbl, "fontSize": "15px"}),
