@@ -16,6 +16,7 @@ app = dash.Dash(__name__, external_stylesheets=[
     dbc.themes.DARKLY,
     "https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&display=swap"
 ])
+server = app.server
 app.title = "Avalanche Forecast Dashboard"
 
 # Inject CSS to style danger cell dropdowns
