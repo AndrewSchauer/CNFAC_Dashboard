@@ -75,17 +75,23 @@ app.index_string = app.index_string.replace(
 #dist-slider .dash-slider-track {
     background-color: #1e3a4a !important;
 }
-/* Center graphs and constrain to container on all screen sizes */
-#likelihood-matrix, #danger-matrix { display: block; margin: 0 auto; max-width: 100%; }
-#likelihood-matrix .js-plotly-plot, #danger-matrix .js-plotly-plot { margin: 0 auto; }
-#likelihood-matrix .main-svg, #danger-matrix .main-svg { max-width: 100% !important; }
+/* Center graphs on desktop */
+#likelihood-matrix, #danger-matrix { display: block; margin: 0 auto; }
+/* Mobile: scale entire graph container down to fit screen */
 @media (max-width: 767px) {
+    #likelihood-matrix, #danger-matrix {
+        width: 100% !important;
+        overflow: hidden;
+    }
+    #likelihood-matrix > div, #danger-matrix > div,
+    #likelihood-matrix .js-plotly-plot, #danger-matrix .js-plotly-plot,
+    #likelihood-matrix .plot-container, #danger-matrix .plot-container {
+        width: 100% !important;
+    }
     #likelihood-matrix .main-svg, #danger-matrix .main-svg {
         width: 100% !important;
         height: auto !important;
     }
-    #likelihood-matrix, #danger-matrix { width: 100% !important; }
-    #likelihood-matrix > div, #danger-matrix > div { width: 100% !important; }
 }
 </style>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -207,7 +213,7 @@ def rounded_rect_path(x0, y0, x1, y1, r=0.12):
     return p
 
 
-def build_likelihood_figure(sf, df):
+def build_likelihood_figure(sf, df, fig_w=465, fig_h=350):
     """
     sf = sensitivity float 0.0-3.0, df = distribution float 0.0-2.0.
     Numeric axes so add_shape works for any position including half-steps.
@@ -270,12 +276,8 @@ def build_likelihood_figure(sf, df):
     fig.update_layout(
         paper_bgcolor="#0d1b2a", plot_bgcolor="#0d1b2a",
         margin=dict(l=60, r=10, t=10, b=40),
-        dragmode="drawrect",
-        newshape=dict(
-            line=dict(color="#00e5ff", width=3),
-            fillcolor="rgba(0, 229, 255, 0.18)",
-            opacity=1,
-        ),
+        dragmode=False,
+        modebar=dict(remove=["all"]),
         xaxis=dict(
             tickmode="array",
             tickvals=x_vals,
@@ -298,12 +300,14 @@ def build_likelihood_figure(sf, df):
             gridcolor="#1e2d3d", showline=False, zeroline=False,
             fixedrange=True,
         ),
-        autosize=True,
+        width=fig_w,
+        height=fig_h,
+        autosize=False,
     )
     return fig
 
 
-def build_danger_figure(lik_range, size_range, danger_grid):
+def build_danger_figure(lik_range, size_range, danger_grid, fig_w=420, fig_h=420):
     z, text = [], []
     for r in range(9):
         row_z, row_t = [], []
@@ -346,6 +350,7 @@ def build_danger_figure(lik_range, size_range, danger_grid):
         paper_bgcolor="#0d1b2a", plot_bgcolor="#0d1b2a",
         margin=dict(l=65, r=10, t=10, b=50),
         dragmode=False,
+        modebar=dict(remove=["all"]),
         xaxis=dict(
             tickmode="array",
             tickvals=x_vals,
@@ -368,7 +373,9 @@ def build_danger_figure(lik_range, size_range, danger_grid):
             gridcolor="#1e2d3d", showline=False, zeroline=False,
             fixedrange=True,
         ),
-        autosize=True,
+        width=fig_w,
+        height=fig_h,
+        autosize=False,
     )
     return fig
 
@@ -511,22 +518,14 @@ forecast_tab = dbc.Row([
         dbc.Card(dbc.CardBody([
             html.Div("LIKELIHOOD MATRIX", style=lbl),
             html.Div(dcc.Graph(id="likelihood-matrix", config={
-                "displayModeBar": True,
-                "modeBarButtonsToAdd": ["drawrect", "eraseshape"],
-                "modeBarButtonsToRemove": ["zoom2d","pan2d","zoomIn2d","zoomOut2d",
-                                           "autoScale2d","resetScale2d","toImage"],
-                "editable": False,
-                "responsive": True,
-            }, style={"width": "100%", "maxWidth": "465px"},
-               responsive=True), style={"display": "flex", "justifyContent": "center"}),
+                "displayModeBar": False,
+            }), style={"display": "flex", "justifyContent": "center"}),
         ]), style=card),
         dbc.Card(dbc.CardBody([
             html.Div("DANGER MATRIX", style=lbl),
             html.Div(dcc.Graph(id="danger-matrix", config={
                 "displayModeBar": False,
-                "responsive": True,
-            }, style={"width": "100%", "maxWidth": "420px"},
-               responsive=True), style={"display": "flex", "justifyContent": "center"}),
+            }), style={"display": "flex", "justifyContent": "center"}),
         ]), style=card),
     ], xs=12, md=8),
     # Right col: summary + NAPADS
@@ -574,7 +573,7 @@ app.layout = html.Div([
     html.Div([
         html.Div([
             html.Div([
-                html.Span("CMAH DASHBOARD", style={
+                html.Span("AVALANCHE FORECAST DASHBOARD", style={
                     "fontFamily": "Barlow Condensed", "fontWeight": "700",
                     "fontSize": "22px", "letterSpacing": "0.25em", "color": "#ffffff"
                 }),
@@ -622,6 +621,11 @@ app.layout = html.Div([
 )
 def update_all(sens_val, dist_val, size_range, danger_grid):
     import math
+    # Guard against None inputs during initial load
+    if sens_val is None: sens_val = 2
+    if dist_val is None: dist_val = 1
+    if size_range is None: size_range = [1, 4]
+    if danger_grid is None: danger_grid = DEFAULT_DANGER_GRID
     # sens_val / dist_val are single half-step indices
     sf = sens_val / 2.0   # float 0.0–3.0
     df = dist_val / 2.0   # float 0.0–2.0
@@ -638,8 +642,8 @@ def update_all(sens_val, dist_val, size_range, danger_grid):
                 for c in range(s_lo, s_hi + 1)]
     l0, l1 = min(lik_vals), max(lik_vals)
 
-    lik_fig    = build_likelihood_figure(sf, df)
-    danger_fig = build_danger_figure([l0, l1], size_range, danger_grid)
+    lik_fig    = build_likelihood_figure(sf, df, fig_w=465, fig_h=350)
+    danger_fig = build_danger_figure([l0, l1], size_range, danger_grid, fig_w=420, fig_h=420)
 
     danger_in_box = {danger_grid[r][c] for r in range(l0, l1 + 1) for c in range(sz0, sz1 + 1)}
     max_danger    = max(danger_in_box, key=lambda d: DANGER_LEVELS.index(d))
@@ -682,7 +686,7 @@ def update_all(sens_val, dist_val, size_range, danger_grid):
     Input("danger-grid-store", "data"),
 )
 def refresh_grid(danger_grid):
-    return make_danger_grid_buttons(danger_grid)
+    return make_danger_grid_buttons(danger_grid or DEFAULT_DANGER_GRID)
 
 
 @app.callback(
@@ -731,88 +735,8 @@ def _snap_to_int(val, max_idx):
     return max(0, min(round(val), max_idx))
 
 
-@app.callback(
-    Output("sens-slider", "value"),
-    Output("dist-slider", "value"),
-    Input("likelihood-matrix", "relayoutData"),
-    State("sens-slider", "value"),
-    State("dist-slider", "value"),
-    prevent_initial_call=True,
-)
-def lik_drag_to_sliders(relayout, curr_sens, curr_dist):
-    """When user draws/moves a shape on the likelihood matrix, snap sliders."""
-    if not relayout:
-        return curr_sens, curr_dist
-
-    # Plotly puts drawn shape coords under shapes[N].x0 etc. or
-    # relayout directly contains 'shapes[0].x0' style keys after a drag.
-    x0 = x1 = y0 = y1 = None
-
-    # Check for freshly drawn shape
-    for key in ["shapes[0].x0", "shapes[0].x1", "shapes[0].y0", "shapes[0].y1"]:
-        pass  # just checking structure
-
-    if "shapes[0].x0" in relayout:
-        x0 = relayout.get("shapes[0].x0")
-        x1 = relayout.get("shapes[0].x1")
-        y0 = relayout.get("shapes[0].y0")
-        y1 = relayout.get("shapes[0].y1")
-    elif "shapes" in relayout and len(relayout["shapes"]) > 0:
-        s = relayout["shapes"][-1]
-        x0, x1 = s.get("x0"), s.get("x1")
-        y0, y1 = s.get("y0"), s.get("y1")
-
-    if None in (x0, x1, y0, y1):
-        return curr_sens, curr_dist
-
-    # Ensure x0 < x1, y0 < y1
-    if x0 > x1: x0, x1 = x1, x0
-    if y0 > y1: y0, y1 = y1, y0
-
-    # Use centre of drawn box to set the point sliders
-    cx = (x0 + x1) / 2.0
-    cy = (y0 + y1) / 2.0
-
-    sens_max = len(SENSITIVITY_SLIDER_LABELS) - 1   # 6
-    dist_max = len(DISTRIBUTION_SLIDER_LABELS) - 1  # 4
-
-    new_sens = _snap_to_half(cx, sens_max)
-    new_dist = _snap_to_half(cy, dist_max)
-
-    return new_sens, new_dist
 
 
-@app.callback(
-    Output("size-slider", "value"),
-    Input("danger-matrix", "relayoutData"),
-    State("size-slider", "value"),
-    prevent_initial_call=True,
-)
-def danger_drag_to_sliders(relayout, curr_size):
-    """When user draws/moves a shape on the danger matrix, update size slider."""
-    if not relayout:
-        return curr_size
-
-    x0 = x1 = None
-
-    if "shapes[0].x0" in relayout:
-        x0 = relayout.get("shapes[0].x0")
-        x1 = relayout.get("shapes[0].x1")
-    elif "shapes" in relayout and len(relayout["shapes"]) > 0:
-        s = relayout["shapes"][-1]
-        x0, x1 = s.get("x0"), s.get("x1")
-
-    if None in (x0, x1):
-        return curr_size
-
-    if x0 > x1: x0, x1 = x1, x0
-
-    size_max = len(SIZE_LABELS) - 1  # 8
-    new_s0 = _snap_to_int(x0 + 0.5, size_max)
-    new_s1 = _snap_to_int(x1 - 0.5, size_max)
-    if new_s0 > new_s1: new_s0, new_s1 = new_s1, new_s0
-
-    return [new_s0, new_s1]
 
 
 if __name__ == "__main__":
