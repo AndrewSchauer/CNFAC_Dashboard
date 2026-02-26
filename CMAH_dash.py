@@ -514,6 +514,15 @@ forecast_tab = dbc.Row([
             html.Div("FORECAST SUMMARY", style=lbl),
             html.Div(id="forecast-summary"),
         ]), style=card),
+        html.Img(
+            src="https://raw.githubusercontent.com/AndrewSchauer/CNFAC_Dashboard/main/NAPADS.png",
+            style={
+                "width": "100%",
+                "marginTop": "4px",
+                "borderRadius": "4px",
+                "opacity": "0.9",
+            }
+        ),
     ], width=4),
 ])
 
