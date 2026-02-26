@@ -506,7 +506,9 @@ controls = dbc.Card(dbc.CardBody([
 ]), style=card)
 
 forecast_tab = dbc.Row([
+    # Left col: sliders + matrices
     dbc.Col([
+        controls,
         dbc.Card(dbc.CardBody([
             html.Div("LIKELIHOOD MATRIX", style=lbl),
             html.Div(dcc.Graph(id="likelihood-matrix", config={
@@ -522,9 +524,9 @@ forecast_tab = dbc.Row([
             html.Div(dcc.Graph(id="danger-matrix", config={"displayModeBar": False}),
                      style={"display": "flex", "justifyContent": "center"}),
         ]), style=card),
-    ], width=8),
+    ], xs=12, md=8),
+    # Right col: summary + NAPADS
     dbc.Col([
-        controls,
         dbc.Card(dbc.CardBody([
             html.Div("FORECAST SUMMARY", style=lbl),
             html.Div(id="forecast-summary"),
@@ -533,7 +535,7 @@ forecast_tab = dbc.Row([
             src="https://raw.githubusercontent.com/AndrewSchauer/CNFAC_Dashboard/main/NAPADS.png",
             style={"width": "100%", "marginTop": "4px", "borderRadius": "4px", "opacity": "0.9"},
         ),
-    ], width=4),
+    ], xs=12, md=4),
 ])
 
 
