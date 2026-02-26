@@ -559,16 +559,21 @@ app.layout = html.Div([
 
     html.Div([
         html.Div([
-            html.Img(src="https://raw.githubusercontent.com/AndrewSchauer/CNFAC_Dashboard/main/CNFAC_Logo.png", style={"height": "40px", "marginRight": "10px"}),
-            html.Span("AVALANCHE FORECAST DASHBOARD", style={
-                "fontFamily": "Barlow Condensed", "fontWeight": "700",
-                "fontSize": "22px", "letterSpacing": "0.25em", "color": "#ffffff"
-            }),
-        ], style={"display": "flex", "alignItems": "center"}),
-        html.Div("RISK ASSESSMENT TOOL", style={
-            "fontFamily": "Share Tech Mono", "fontSize": "10px",
-            "color": "#00e5ff", "letterSpacing": "0.2em", "marginTop": "2px"
-        }),
+            html.Div([
+                html.Span("AVALANCHE FORECAST DASHBOARD", style={
+                    "fontFamily": "Barlow Condensed", "fontWeight": "700",
+                    "fontSize": "22px", "letterSpacing": "0.25em", "color": "#ffffff"
+                }),
+                html.Div("RISK ASSESSMENT TOOL", style={
+                    "fontFamily": "Share Tech Mono", "fontSize": "10px",
+                    "color": "#00e5ff", "letterSpacing": "0.2em", "marginTop": "2px"
+                }),
+            ]),
+            html.Img(
+                src="https://raw.githubusercontent.com/AndrewSchauer/CNFAC_Dashboard/main/CNFAC_Logo.png",
+                style={"height": "50px"}
+            ),
+        ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between", "width": "100%"}),
     ], style={"backgroundColor": "#060e1a", "borderBottom": "1px solid #1e3a4a", "padding": "14px 24px 10px"}),
 
     dbc.Tabs([
