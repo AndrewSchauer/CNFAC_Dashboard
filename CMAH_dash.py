@@ -180,7 +180,7 @@ def _build_default_grid():
     """9×9 danger grid: rows=Likelihood (0-8), cols=Size (0-8)."""
     return [
         ["Low","Low","Low","Low","Low","Low","Low","Low","Low"],
-        ["Low","Low","Low","Moderate","Moderate","Moderate","Considerable","Considerable","Considerable"],
+        ["Low","Low","Low","Low","Moderate","Moderate","Considerable","Considerable","Considerable"],
         ["Low","Low","Moderate","Moderate","Moderate","Considerable","Considerable","High","High"],
         ["Low","Low","Moderate","Moderate","Considerable","Considerable","High","High","Extreme"],
         ["Low","Moderate","Moderate","Considerable","Considerable","High","High","Extreme","Extreme"],
@@ -508,7 +508,7 @@ controls = dbc.Card(dbc.CardBody([
     make_point_slider("sens-slider", SENSITIVITY_SLIDER_LABELS, 2),
     html.Div(style={"height": "26px"}),
     html.Div("SIZE", style=lbl),
-    make_range_slider("size-slider", SIZE_LABELS, [1, 4]),
+    make_range_slider("size-slider", SIZE_LABELS, [0, 2]),
 ]), style=card)
 
 forecast_tab = dbc.Row([
