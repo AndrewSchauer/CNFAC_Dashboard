@@ -9,7 +9,7 @@ import urllib.error
 import urllib.request
 
 import dash
-from dash import dcc, html, Input, Output, State, callback_context, ALL
+from dash import dcc, html, Input, Output, State, callback_context, ALL, Patch
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import json
@@ -79,12 +79,29 @@ app.index_string = app.index_string.replace(
 .danger-cell-dropdown .VirtualizedSelectFocusedOption {
     background-color: #1e3a4a !important;
 }
-/* Hide the filled range bar on the sensitivity and distribution point sliders */
+/* Give the size slider the same track/fill styling as sensitivity and distribution */
 #sens-slider .dash-slider-range,
 #dist-slider .dash-slider-range,
+#size-slider .dash-slider-range,
 #sens-slider .dash-slider-track,
-#dist-slider .dash-slider-track {
+#dist-slider .dash-slider-track,
+#size-slider .dash-slider-track {
     background-color: #1e3a4a !important;
+}
+/* Blend the drag-value tooltip (the small popup that appears above the
+   handle while dragging) into the card it sits in, instead of its default
+   mismatched color -- background and text both match the card, and the
+   arrow/shadow are hidden so nothing but the blank shape is left behind. */
+.dash-slider-tooltip,
+.dash-slider-tooltip-inner,
+.dash-slider-tooltip-content {
+    background-color: #0d1b2a !important;
+    color: #0d1b2a !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+.dash-slider-tooltip-arrow {
+    display: none !important;
 }
 /* Center graphs on desktop */
 #likelihood-matrix, #danger-matrix { display: block; margin: 0 auto; }
@@ -174,10 +191,10 @@ DANGER_ROW_LABELS = ["Unlikely", "Possible", "Likely", "Very Likely", "Almost Ce
 def lik_val_to_row(v):
     return v // 2
 
-# Size columns: last one ("4+") renders twice the width of the rest, since it
-# represents everything the source tool ever recorded at 4 and above (nothing
-# was ever recorded at 4.5 or 5) rather than one 0.5-wide size step.
-SIZE_COL_WIDTHS = [1, 1, 1, 1, 1, 1, 2]
+# Size columns: all equal width, including "4+" (previously rendered 2x
+# width to represent everything the source tool recorded at 4 and above,
+# but reverted so the whole matrix reads as uniform columns).
+SIZE_COL_WIDTHS = [1, 1, 1, 1, 1, 1, 1]
 _size_col_bounds = [0]
 for _w in SIZE_COL_WIDTHS:
     _size_col_bounds.append(_size_col_bounds[-1] + _w)
@@ -211,40 +228,6 @@ DANGER_ABBREV = {
     "No Rating": "—", "Low": "Low", "Moderate": "Mod",
     "Considerable": "Con", "High": "High", "Extreme": "Ext"
 }
-
-# Background the danger-matrix cells blend toward, matching the card's own
-# paper/plot background (see build_danger_figure's update_layout below) so a
-# low-count cell fades into the surrounding UI instead of standing out.
-_CELL_BG_HEX = "#0d1b2a"
-
-def _hex_to_rgb01(h):
-    h = h.lstrip('#')
-    return tuple(int(h[i:i+2], 16) / 255.0 for i in (0, 2, 4))
-
-def _rgb01_to_hex(rgb):
-    return '#' + ''.join(f'{max(0, min(255, round(v * 255))):02x}' for v in rgb)
-
-def _blend_cell_color(counts):
-    """Port of build_danger_backgrounds.py's blend_cell_color: blends the
-    top-2 most common danger levels by their relative share, then fades the
-    result toward the card background based on total observation count (few
-    observations -> mostly background; many -> mostly the blended color)."""
-    bg = _hex_to_rgb01(_CELL_BG_HEX)
-    if not counts:
-        return bg
-    items = sorted(counts.items(), key=lambda kv: kv[1], reverse=True)[:2]
-    total = sum(counts.values())
-    if len(items) == 1:
-        rgb = _hex_to_rgb01(DANGER_COLORS[DANGER_LEVELS[int(items[0][0])]])
-    else:
-        (lvl1, n1), (lvl2, n2) = items
-        s = n1 + n2
-        w1, w2 = n1 / s, n2 / s
-        rgb1 = _hex_to_rgb01(DANGER_COLORS[DANGER_LEVELS[int(lvl1)]])
-        rgb2 = _hex_to_rgb01(DANGER_COLORS[DANGER_LEVELS[int(lvl2)]])
-        rgb = tuple(w1 * a + w2 * b for a, b in zip(rgb1, rgb2))
-    alpha = min(max(1 - 1 / (2 * total), 0.0), 1.0)
-    return tuple(alpha * a + (1 - alpha) * b for a, b in zip(rgb, bg))
 
 
 def _build_manual_grid():
@@ -281,6 +264,17 @@ def _load_grid_and_counts():
         return _build_manual_grid(), None
 
 DEFAULT_DANGER_GRID, DEFAULT_DANGER_COUNTS = _load_grid_and_counts()
+
+# Manual override: the top-left corner of the matrix (Almost Certain
+# likelihood, the two smallest size columns) always defaults to Moderate
+# regardless of what the fetched/fallback grid says for those cells.
+# (size=1/Very Likely is intentionally NOT overridden here -- the fetched
+# data already correctly computes it as Considerable, the proper severity
+# tie-break for its 2-vs-2 Moderate/Considerable observation tie. Forcing
+# it to Moderate previously fought against that and caused its bars to be
+# suppressed, since the cell then looked user-edited when it wasn't.)
+DEFAULT_DANGER_GRID[4][0] = "Moderate"
+DEFAULT_DANGER_GRID[4][1] = "Moderate"
 
 
 # ─── Figure builders ──────────────────────────────────────────────────────────
@@ -339,7 +333,7 @@ def build_likelihood_figure(sf, df, fig_w=465, fig_h=350):
             fig.add_annotation(
                 x=ci, y=ri,
                 text=cell_text[ri][ci], showarrow=False,
-                font=dict(size=12, color=text_color, family="Barlow Condensed"),
+                font=dict(size=14, color=text_color, family="Barlow Condensed"),
             )
 
     if sf is not None and df is not None:
@@ -372,9 +366,9 @@ def build_likelihood_figure(sf, df, fig_w=465, fig_h=350):
             tickmode="array",
             tickvals=x_vals,
             ticktext=SENSITIVITY_LABELS,
-            tickfont=dict(family="Barlow Condensed", color="#bbb", size=12),
+            tickfont=dict(family="Barlow Condensed", color="#bbb", size=14),
             title=dict(text="Sensitivity to Triggers",
-                       font=dict(family="Barlow Condensed", color="#888", size=11)),
+                       font=dict(family="Barlow Condensed", color="#888", size=13)),
             range=[-0.5, len(SENSITIVITY_LABELS) - 0.5],
             showgrid=False, showline=False, zeroline=False,
             fixedrange=True,
@@ -383,9 +377,9 @@ def build_likelihood_figure(sf, df, fig_w=465, fig_h=350):
             tickmode="array",
             tickvals=y_vals,
             ticktext=DISTRIBUTION_LABELS,
-            tickfont=dict(family="Barlow Condensed", color="#bbb", size=12),
+            tickfont=dict(family="Barlow Condensed", color="#bbb", size=14),
             title=dict(text="Spatial Distribution",
-                       font=dict(family="Barlow Condensed", color="#888", size=11)),
+                       font=dict(family="Barlow Condensed", color="#888", size=13)),
             range=[-0.5, len(DISTRIBUTION_LABELS) - 0.5],
             showgrid=False, showline=False, zeroline=False,
             fixedrange=True,
@@ -407,16 +401,11 @@ def build_danger_figure(lik_range, size_range, danger_grid, counts_grid=None, fi
     counts_grid, if given, is DEFAULT_DANGER_COUNTS: a 5x7 grid of
     {danger_level_str: count} dicts holding the full historical maxD
     distribution per cell (from build_danger_backgrounds.py). Where present,
-    a cell renders the same way as the matplotlib plot -- background blended
-    from the top-2 most common ratings, plus a small bar per rating showing
-    its share of observations. Cells with no counts (fallback-grid cells, or
-    a cell the user has edited away from its historical value) fall back to
-    a flat fill in the cell's current danger_grid color.
-
-    Cells are drawn as explicit rectangles (not a Heatmap trace) so the last
-    column can be exactly 2x width without Plotly's uneven-spacing logic
-    also inflating the neighboring column. A fully transparent scatter layer
-    carries the hover text.
+    a small bar per rating still shows its share of observations, but the
+    cell background is now always a flat, single official NAPADS color for
+    danger_grid[r][c] (that value is already the historical mode, ties
+    broken toward the more severe rating -- see build_danger_backgrounds.py)
+    -- no blending between ratings and no fading by observation count.
     """
     n_rows = len(DANGER_ROW_LABELS)
     n_cols = len(SIZE_LABELS)
@@ -431,18 +420,22 @@ def build_danger_figure(lik_range, size_range, danger_grid, counts_grid=None, fi
             d = danger_grid[r][c]
             counts = counts_grid[r][c] if counts_grid else None
             # A cell the user has edited away from its historical mode no
-            # longer matches that history, so it renders flat (their choice)
-            # rather than a blend that would visually contradict the label.
-            is_edited = counts and DANGER_LEVELS.index(d) != int(
-                max(counts.items(), key=lambda kv: kv[1])[0]
-            )
-
-            if counts and not is_edited:
-                blended_rgb = _blend_cell_color(counts)
-                fill = _rgb01_to_hex(blended_rgb)
+            # longer matches that history, so its bars (below) are skipped
+            # -- the flat background fill still always shows their choice.
+            # Tie-break toward the more severe rating, matching
+            # build_danger_backgrounds.py's build_grid() exactly -- using
+            # plain max(counts.items()) here previously broke ties by
+            # whichever key happened to come first in the dict, which could
+            # (and did) disagree with the grid's own stored value on a tie,
+            # making an untouched cell look "edited" and hiding its bars.
+            if counts:
+                max_n = max(counts.values())
+                counts_mode = max(int(lvl) for lvl, n in counts.items() if n == max_n)
+                is_edited = DANGER_LEVELS.index(d) != counts_mode
             else:
-                blended_rgb = None
-                fill = DANGER_COLORS[d]
+                is_edited = False
+
+            fill = DANGER_COLORS[d]
 
             fig.add_shape(
                 type="rect", x0=x0, x1=x1, y0=y0, y1=y1,
@@ -470,12 +463,10 @@ def build_danger_figure(lik_range, size_range, danger_grid, counts_grid=None, fi
                         fillcolor=DANGER_COLORS[DANGER_LEVELS[level]],
                         opacity=0.85, layer="below",
                     )
-                bright = 0.299 * blended_rgb[0] + 0.587 * blended_rgb[1] + 0.114 * blended_rgb[2]
                 fig.add_annotation(
                     x=x1 - 0.06 * (x1 - x0), y=y1 - 0.08, text=f"n={total}",
                     showarrow=False, xanchor="right", yanchor="top",
-                    font=dict(family="Share Tech Mono", size=9,
-                              color="#111111" if bright > 0.45 else "#ffffff"),
+                    font=dict(family="Share Tech Mono", size=11, color=DANGER_TEXT[d]),
                 )
 
             hover_x.append(SIZE_COL_CENTERS[c])
@@ -521,9 +512,9 @@ def build_danger_figure(lik_range, size_range, danger_grid, counts_grid=None, fi
             tickmode="array",
             tickvals=SIZE_COL_CENTERS,
             ticktext=SIZE_LABELS,
-            tickfont=dict(family="Barlow Condensed", color="#bbb", size=11),
+            tickfont=dict(family="Barlow Condensed", color="#bbb", size=13),
             title=dict(text="Destructive Size",
-                       font=dict(family="Barlow Condensed", color="#888", size=11)),
+                       font=dict(family="Barlow Condensed", color="#888", size=13)),
             range=[0, SIZE_AXIS_MAX],
             showgrid=False, showline=False, zeroline=False,
             fixedrange=True,
@@ -532,9 +523,9 @@ def build_danger_figure(lik_range, size_range, danger_grid, counts_grid=None, fi
             tickmode="array",
             tickvals=list(range(n_rows)),
             ticktext=DANGER_ROW_LABELS,
-            tickfont=dict(family="Barlow Condensed", color="#bbb", size=10),
+            tickfont=dict(family="Barlow Condensed", color="#bbb", size=12),
             title=dict(text="Likelihood",
-                       font=dict(family="Barlow Condensed", color="#888", size=11)),
+                       font=dict(family="Barlow Condensed", color="#888", size=13)),
             range=[-0.5, n_rows - 0.5],
             showgrid=False, showline=False, zeroline=False,
             fixedrange=True,
@@ -583,8 +574,7 @@ def make_danger_grid_buttons(grid):
             danger  = grid[r][c]
             bg      = DANGER_COLORS[danger]
             fg      = DANGER_TEXT[danger]
-            is_last = c == len(SIZE_LABELS) - 1
-            cell_w  = 116 if is_last else 58  # "4+" column rendered 2x width, matching the matrix plot
+            cell_w  = 58
             cells.append(html.Div(
                 dcc.Dropdown(
                     id={"type": "grid-cell", "row": r, "col": c},
@@ -611,9 +601,9 @@ def make_danger_grid_buttons(grid):
     size_row = html.Div(
         [html.Div("", style={"width": "138px", "flexShrink": "0"})] +
         [html.Div(s, style={
-            "width": f"{116 if i == len(SIZE_LABELS) - 1 else 58}px", "textAlign": "center", "color": "#aaa",
+            "width": "58px", "textAlign": "center", "color": "#aaa",
             "fontSize": "10px", "fontFamily": "Barlow Condensed", "flexShrink": "0"
-        }) for i, s in enumerate(SIZE_LABELS)],
+        }) for s in SIZE_LABELS],
         style={"display": "flex", "marginTop": "4px"}
     )
     return html.Div([
@@ -630,25 +620,25 @@ def make_danger_grid_buttons(grid):
 def make_range_slider(id, labels, default, half_labels=None):
     """If half_labels provided, uses those for marks with step=1 over doubled range."""
     if half_labels:
-        marks = {i: {"label": l, "style": {"color": "#aaa", "fontFamily": "Barlow Condensed", "fontSize": "10px"}}
+        marks = {i: {"label": l, "style": {"color": "#aaa", "fontFamily": "Barlow Condensed", "fontSize": "14px"}}
                  for i, l in enumerate(half_labels)}
         return dcc.RangeSlider(
             id=id, min=0, max=len(half_labels) - 1, step=1,
             value=[v * 2 for v in default], marks=marks, allowCross=False,
-            tooltip={"always_visible": False},
+            tooltip={"always_visible": False}, allow_direct_input=False,
         )
-    marks = {i: {"label": l, "style": {"color": "#aaa", "fontFamily": "Barlow Condensed", "fontSize": "11px"}}
+    marks = {i: {"label": l, "style": {"color": "#aaa", "fontFamily": "Barlow Condensed", "fontSize": "15px"}}
              for i, l in enumerate(labels)}
     return dcc.RangeSlider(
         id=id, min=0, max=len(labels) - 1, step=1,
         value=default, marks=marks, allowCross=False,
-        tooltip={"always_visible": False},
+        tooltip={"always_visible": False}, allow_direct_input=False,
     )
 
 
 # ─── Layout ───────────────────────────────────────────────────────────────────
 
-lbl = {"fontFamily": "Barlow Condensed", "fontWeight": "700", "fontSize": "13px",
+lbl = {"fontFamily": "Barlow Condensed", "fontWeight": "700", "fontSize": "15px",
        "color": "#00e5ff", "letterSpacing": "0.12em", "marginBottom": "6px"}
 card = {"backgroundColor": "#0d1b2a", "border": "1px solid #1e3a4a", "marginBottom": "14px"}
 
@@ -658,14 +648,14 @@ def make_point_slider(id, half_labels, default_idx):
     for i, l in enumerate(half_labels):
         if i % 2 == 0:
             # Named step — show label
-            marks[i] = {"label": l, "style": {"color": "#aaa", "fontFamily": "Barlow Condensed", "fontSize": "10px"}}
+            marks[i] = {"label": l, "style": {"color": "#aaa", "fontFamily": "Barlow Condensed", "fontSize": "14px"}}
         else:
             # Half-step — show a small tick but no text
             marks[i] = {"label": "", "style": {"color": "transparent"}}
     return dcc.Slider(
         id=id, min=0, max=len(half_labels) - 1, step=1,
         value=default_idx, marks=marks,
-        tooltip={"always_visible": False},
+        tooltip={"always_visible": False}, allow_direct_input=False,
     )
 
 controls = dbc.Card(dbc.CardBody([
@@ -695,7 +685,7 @@ forecast_tab = dbc.Row([
                 html.Span(
                     "Danger rating distribution based 32,518 historical forecasts",
                     style={
-                        "fontFamily": "Share Tech Mono", "fontSize": "10px",
+                        "fontFamily": "Share Tech Mono", "fontSize": "12px",
                         "color": "#00e5ff", "letterSpacing": "0.1em",
                         "marginLeft": "10px", "opacity": "0.7",
                     },
@@ -721,7 +711,7 @@ forecast_tab = dbc.Row([
 
 
 settings_tab = html.Div([
-    html.Div("CONFIGURE DANGER GRID", style={**lbl, "fontSize": "15px"}),
+    html.Div("CONFIGURE DANGER GRID", style={**lbl, "fontSize": "17px"}),
     html.P("Click any cell to cycle: No Rating → Low → Moderate → Considerable → High → Extreme → …",
            style={"color": "#777", "fontFamily": "Barlow Condensed", "fontSize": "12px", "marginBottom": "14px"}),
     html.Div([
@@ -753,10 +743,10 @@ app.layout = html.Div([
             html.Div([
                 html.Span("🔮 CMAH DASHBOARD", style={
                     "fontFamily": "Barlow Condensed", "fontWeight": "700",
-                    "fontSize": "22px", "letterSpacing": "0.25em", "color": "#ffffff"
+                    "fontSize": "24px", "letterSpacing": "0.25em", "color": "#ffffff"
                 }),
                 html.Div("North American Public Avalanche Danger Scale Decision Support Tool", style={
-                    "fontFamily": "Share Tech Mono", "fontSize": "10px",
+                    "fontFamily": "Share Tech Mono", "fontSize": "12px",
                     "color": "#00e5ff", "letterSpacing": "0.2em", "marginTop": "2px"
                 }),
             ]),
@@ -771,14 +761,14 @@ app.layout = html.Div([
         dbc.Tab(
             html.Div(forecast_tab, style={"padding": "18px"}),
             label="FORECAST", tab_id="forecast",
-            label_style={"fontFamily": "Barlow Condensed", "letterSpacing": "0.1em", "fontSize": "13px"},
-            active_label_style={"color": "#00e5ff", "fontFamily": "Barlow Condensed", "fontSize": "13px"},
+            label_style={"fontFamily": "Barlow Condensed", "letterSpacing": "0.1em", "fontSize": "15px"},
+            active_label_style={"color": "#00e5ff", "fontFamily": "Barlow Condensed", "fontSize": "15px"},
         ),
         dbc.Tab(
             html.Div(settings_tab, style={"padding": "18px"}),
             label="SETTINGS", tab_id="settings",
-            label_style={"fontFamily": "Barlow Condensed", "letterSpacing": "0.1em", "fontSize": "13px"},
-            active_label_style={"color": "#00e5ff", "fontFamily": "Barlow Condensed", "fontSize": "13px"},
+            label_style={"fontFamily": "Barlow Condensed", "letterSpacing": "0.1em", "fontSize": "15px"},
+            active_label_style={"color": "#00e5ff", "fontFamily": "Barlow Condensed", "fontSize": "15px"},
         ),
     ], active_tab="forecast",
        style={"backgroundColor": "#060e1a", "borderBottom": "1px solid #1e3a4a"}),
@@ -821,8 +811,37 @@ def update_all(sens_val, dist_val, size_range, danger_grid):
     l0, l1 = min(lik_vals), max(lik_vals)
     lr0, lr1 = lik_val_to_row(l0), lik_val_to_row(l1)  # compact 0-4 rows for the 5-row danger grid
 
-    lik_fig    = build_likelihood_figure(sf, df, fig_w=465, fig_h=350)
-    danger_fig = build_danger_figure([lr0, lr1], size_range, danger_grid, DEFAULT_DANGER_COUNTS, fig_w=420, fig_h=420)
+    # The cell backgrounds/bars only change when danger_grid itself changes
+    # (an edit) -- a slider move never touches them, only the highlight
+    # box's position. Rebuilding both whole figures (35+ shapes each) just
+    # to move one box is what made the boxes feel slow, so slider-only
+    # changes now send a Patch touching just the box (and the likelihood
+    # matrix's crosshair marker) instead of two full figures.
+    trigger = callback_context.triggered_id if callback_context.triggered else None
+    full_rebuild = trigger in (None, "danger-grid-store")
+
+    if full_rebuild:
+        lik_fig    = build_likelihood_figure(sf, df, fig_w=465, fig_h=350)
+        danger_fig = build_danger_figure([lr0, lr1], size_range, danger_grid, DEFAULT_DANGER_COUNTS, fig_w=420, fig_h=420)
+    else:
+        s_lo_f, s_hi_f = math.floor(sf), math.ceil(sf)
+        d_lo_f, d_hi_f = math.floor(df), math.ceil(df)
+
+        lik_fig = Patch()
+        lik_fig["layout"]["shapes"][-1]["path"] = rounded_rect_path(
+            s_lo_f - 0.45, d_lo_f - 0.45, s_hi_f + 0.45, d_hi_f + 0.45, r=0.15
+        )
+        lik_fig["data"][1]["x"] = [sf]
+        lik_fig["data"][1]["y"] = [df]
+
+        sx0, _ = size_col_bounds(sz0)
+        _, sx1 = size_col_bounds(sz1)
+        pad_s = 0.10
+        pad_l = 0.49 if lr0 != lr1 else 0.42
+        danger_fig = Patch()
+        danger_fig["layout"]["shapes"][-1]["path"] = rounded_rect_path(
+            sx0 + pad_s, lr0 - pad_l, sx1 - pad_s, lr1 + pad_l, r=0.2
+        )
 
     danger_in_box = {danger_grid[r][c] for r in range(lr0, lr1 + 1) for c in range(sz0, sz1 + 1)}
     max_danger    = max(danger_in_box, key=lambda d: DANGER_LEVELS.index(d))
