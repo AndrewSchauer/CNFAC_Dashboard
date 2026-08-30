@@ -79,10 +79,14 @@ app.index_string = app.index_string.replace(
 .danger-cell-dropdown .VirtualizedSelectFocusedOption {
     background-color: #1e3a4a !important;
 }
-/* Give the size slider the same track/fill styling as sensitivity and distribution */
+/* Sensitivity/distribution are single-point sliders where a "filled from
+   start" indicator isn't meaningful, so their range fill is grayed out to
+   match the track. Size is a true range slider between two handles, so its
+   range fill stays on its default color (purple) -- only its track (the
+   full background bar) is grayed out to match the others; the purple span
+   renders on top of that gray track to show the selected min/max. */
 #sens-slider .dash-slider-range,
 #dist-slider .dash-slider-range,
-#size-slider .dash-slider-range,
 #sens-slider .dash-slider-track,
 #dist-slider .dash-slider-track,
 #size-slider .dash-slider-track {
@@ -652,10 +656,18 @@ def make_point_slider(id, half_labels, default_idx):
         else:
             # Half-step — show a small tick but no text
             marks[i] = {"label": "", "style": {"color": "transparent"}}
-    return dcc.Slider(
-        id=id, min=0, max=len(half_labels) - 1, step=1,
-        value=default_idx, marks=marks,
-        tooltip={"always_visible": False}, allow_direct_input=False,
+    return html.Div(
+        dcc.Slider(
+            id=id, min=0, max=len(half_labels) - 1, step=1,
+            value=default_idx, marks=marks,
+            tooltip={"always_visible": False}, allow_direct_input=False,
+        ),
+        # Track is inset from the card edges so the longest edge labels
+        # (Unreactive/Touchy, Isolated/Widespread) have room to render in
+        # full instead of overflowing past the card boundary — labels are
+        # centered on their tick, so this needs to absorb roughly half of
+        # the longest label's width on each side, not just a few pixels.
+        style={"padding": "0 40px"},
     )
 
 controls = dbc.Card(dbc.CardBody([
