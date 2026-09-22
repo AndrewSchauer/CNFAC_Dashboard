@@ -79,14 +79,10 @@ app.index_string = app.index_string.replace(
 .danger-cell-dropdown .VirtualizedSelectFocusedOption {
     background-color: #1e3a4a !important;
 }
-/* Sensitivity/distribution are single-point sliders where a "filled from
-   start" indicator isn't meaningful, so their range fill is grayed out to
-   match the track. Size is a true range slider between two handles, so its
-   range fill stays on its default color (purple) -- only its track (the
-   full background bar) is grayed out to match the others; the purple span
-   renders on top of that gray track to show the selected min/max. */
+/* Give the size slider the same track/fill styling as sensitivity and distribution */
 #sens-slider .dash-slider-range,
 #dist-slider .dash-slider-range,
+#size-slider .dash-slider-range,
 #sens-slider .dash-slider-track,
 #dist-slider .dash-slider-track,
 #size-slider .dash-slider-track {
@@ -656,18 +652,10 @@ def make_point_slider(id, half_labels, default_idx):
         else:
             # Half-step — show a small tick but no text
             marks[i] = {"label": "", "style": {"color": "transparent"}}
-    return html.Div(
-        dcc.Slider(
-            id=id, min=0, max=len(half_labels) - 1, step=1,
-            value=default_idx, marks=marks,
-            tooltip={"always_visible": False}, allow_direct_input=False,
-        ),
-        # Track is inset from the card edges so the longest edge labels
-        # (Unreactive/Touchy, Isolated/Widespread) have room to render in
-        # full instead of overflowing past the card boundary — labels are
-        # centered on their tick, so this needs to absorb roughly half of
-        # the longest label's width on each side, not just a few pixels.
-        style={"padding": "0 40px"},
+    return dcc.Slider(
+        id=id, min=0, max=len(half_labels) - 1, step=1,
+        value=default_idx, marks=marks,
+        tooltip={"always_visible": False}, allow_direct_input=False,
     )
 
 controls = dbc.Card(dbc.CardBody([
@@ -747,6 +735,91 @@ settings_tab = html.Div([
                style={"fontFamily": "Barlow Condensed"}),
 ])
 
+
+# ─── About tab ────────────────────────────────────────────────────────────────
+
+_about_p  = {"color": "#ccc", "fontFamily": "Barlow Condensed", "fontSize": "17px",
+             "lineHeight": "1.5", "marginBottom": "14px"}
+_about_li = {"color": "#ccc", "fontFamily": "Barlow Condensed", "fontSize": "17px",
+             "lineHeight": "1.5", "marginBottom": "8px"}
+_about_ol = {"paddingLeft": "24px", "marginBottom": "16px"}
+_ABOUT_PDF_URL = "https://www.cnfaic.org/wp-content/uploads/2026/09/SchauerSykes_ISSW2026.pdf"
+
+about_tab = dbc.Card(dbc.CardBody([
+    html.Div("ABOUT", style={**lbl, "fontSize": "17px"}),
+    html.P(
+        "This dashboard is designed as a visual aid to navigate the CMAH workflow, "
+        "connecting avalanche sensitivity, distribution, and size and likelihood to a "
+        "range of appropriate danger ratings. The tool works as follows:",
+        style=_about_p,
+    ),
+    html.Ol([
+        html.Li(
+            "The user manually adjusts the slider bars for sensitivity, distribution, "
+            "and size. Note that you may assign half-steps for any of these, and you may "
+            "also assign a range of sizes.",
+            style=_about_li,
+        ),
+        html.Li(
+            "Likelihood is automatically determined using the sensitivity/distribution "
+            "matrix, based on the inputs from step 1.",
+            style=_about_li,
+        ),
+        html.Li(
+            "The turquoise box on the size/likelihood matrix will automatically hover "
+            "over the region of the size/likelihood danger rating matrix based on inputs "
+            "assigned in step 1. This will highlight a cell on the matrix (or several cells "
+            "on the matrix, based on the ranges defined in step 1). These cells contain "
+            "information from the National Avalanche Center Avalanche Forecast Platform "
+            "dataset, which is based on over 30,000 public forecasts from 24 centers "
+            "across the U.S.",
+            style=_about_li,
+        ),
+    ], style=_about_ol),
+    html.P(
+        "Each cell in the size/likelihood danger rating matrix contains three key elements:",
+        style=_about_p,
+    ),
+    html.Ol([
+        html.Li(
+            "A histogram of vertical bars representing the number of days assigned to each "
+            "level of the North American Public Avalanche Danger Scale for each combination "
+            "of size and likelihood. Higher bars represent more days assigned to that danger "
+            "rating.",
+            style=_about_li,
+        ),
+        html.Li(
+            "The background color of the cell will correspond with the NAPADS Danger Rating "
+            "that has been assigned most frequently for that combination of size and "
+            "likelihood. In cases where there is a tie between two danger ratings, the higher "
+            "danger rating will define the background color of the cell.",
+            style=_about_li,
+        ),
+        html.Li(
+            "The number of days in the NAC record for that combination of size and "
+            "likelihood. Note that this may range from over 9,000 for the most commonly "
+            "occurring conditions (e.g. Size = '2' and Likelihood = 'Possible') to single "
+            "digits for the less frequently occurring conditions (e.g. Size = '4+' and "
+            "Likelihood = 'Almost Certain').",
+            style=_about_li,
+        ),
+    ], style=_about_ol),
+    html.P(
+        "This tool is meant to help inform the decision-making process in assigning a "
+        "Danger Rating for a public backcountry avalanche forecast. A note of caution- this "
+        "tool does not incorporate Avalanche Problem Type or Travel Advice in any way. These "
+        "are two key elements that must always be considered, and may ultimately lead the "
+        "user to assigning a danger rating that is different from the rating that this tool "
+        "highlights based on size and likelihood alone.",
+        style=_about_p,
+    ),
+    html.P([
+        "Additional information on this tool may be found at: ",
+        html.A(_ABOUT_PDF_URL, href=_ABOUT_PDF_URL, target="_blank",
+               style={"color": "#00e5ff", "wordBreak": "break-all"}),
+    ], style=_about_p),
+]), style={**card, "maxWidth": "900px"})
+
 app.layout = html.Div([
     dcc.Store(id="danger-grid-store", data=DEFAULT_DANGER_GRID),
 
@@ -772,7 +845,13 @@ app.layout = html.Div([
     dbc.Tabs([
         dbc.Tab(
             html.Div(forecast_tab, style={"padding": "18px"}),
-            label="FORECAST", tab_id="forecast",
+            label="DANGER RATING", tab_id="forecast",
+            label_style={"fontFamily": "Barlow Condensed", "letterSpacing": "0.1em", "fontSize": "15px"},
+            active_label_style={"color": "#00e5ff", "fontFamily": "Barlow Condensed", "fontSize": "15px"},
+        ),
+        dbc.Tab(
+            html.Div(about_tab, style={"padding": "18px"}),
+            label="ABOUT", tab_id="about",
             label_style={"fontFamily": "Barlow Condensed", "letterSpacing": "0.1em", "fontSize": "15px"},
             active_label_style={"color": "#00e5ff", "fontFamily": "Barlow Condensed", "fontSize": "15px"},
         ),
